@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Todo App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 min-h-screen flex items-center justify-center">
+  <div class="bg-white shadow-lg rounded-lg w-full max-w-md p-6">
+    <h1 class="text-2xl font-bold text-center text-gray-800 mb-4">Todo List</h1>
+    
+    <div class="flex mb-4">
+      <input id="todoInput" type="text" placeholder="Enter a task"
+        class="flex-1 border rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+      <button onclick="addTodo()"
+        class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-r-md transition">
+        Add
+      </button>
+    </div>
+    
+    <ul id="todoList" class="space-y-2"></ul>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', loadTodos);
+
+    function loadTodos() {
+      fetch('/todos')
+        .then(res => res.json())
+        .then(todos => {
+          const list = document.getElementById('todoList');
+          list.innerHTML = '';
+
+          todos.forEach(todo => {
+            const li = document.createElement('li');
+            li.className = "flex items-center justify-between bg-gray-100 rounded-md px-4 py-2 shadow";
+
+            // Checkbox
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = todo.completed;
+            checkbox.className = "w-5 h-5 text-indigo-500 border-gray-300 rounded focus:ring-indigo-400";
+            checkbox.onchange = () => toggleComplete(todo.id, checkbox.checked);
+
+            // Title
+            const span = document.createElement('span');
+            span.textContent = todo.title;
+            span.className = `ml-3 flex-1 ${todo.completed ? 'line-through text-gray-500' : 'text-gray-800'}`;
+
+            // Delete button
+            const delBtn = document.createElement('button');
+            delBtn.textContent = '✖';
+            delBtn.className = "ml-4 bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded transition";
+            delBtn.onclick = () => deleteTodo(todo.id);
+
+            li.appendChild(checkbox);
+            li.appendChild(span);
+            li.appendChild(delBtn);
+
+            list.appendChild(li);
+          });
+        });
+    }
+
+    function addTodo() {
+      const input = document.getElementById('todoInput');
+      const title = input.value.trim();
+      if (!title) return;
+
+      fetch('/todos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title })
+      })
+        .then(res => res.json())
+        .then(() => {
+          input.value = '';
+          loadTodos();
+        });
+    }
+
+    function toggleComplete(id, completed) {
+      fetch(`/todos/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed })
+      }).then(loadTodos);
+    }
+
+    function deleteTodo(id) {
+      fetch(`/todos/${id}`, { method: 'DELETE' }).then(loadTodos);
+    }
+  </script>
+</body>
+</html>
